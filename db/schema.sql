@@ -32,17 +32,7 @@ CREATE TABLE safety_bell (
     geom GEOMETRY(Point, 4326)
 );
 
--- ⑤ 관공서 (파출소/지구대/경찰서/소방서)
-CREATE TABLE public_office (
-    id BIGSERIAL PRIMARY KEY,
-    name VARCHAR(100),
-    office_type VARCHAR(20),          -- POLICE_SUBSTATION, FIRE_STATION 등
-    address VARCHAR(300),
-    is_24h BOOLEAN DEFAULT true,
-    geom GEOMETRY(Point, 4326)
-);
-
--- ⑥ 사용자 신고
+-- ⑤ 사용자 신고
 CREATE TABLE report (
     id BIGSERIAL PRIMARY KEY,
     content TEXT NOT NULL,            -- 사용자가 쓴 원문
@@ -60,5 +50,4 @@ CREATE INDEX idx_crime_zone_geom ON crime_zone USING GIST(geom);
 CREATE INDEX idx_cctv_geom ON cctv USING GIST(geom);
 CREATE INDEX idx_light_geom ON security_light USING GIST(geom);
 CREATE INDEX idx_bell_geom ON safety_bell USING GIST(geom);
-CREATE INDEX idx_office_geom ON public_office USING GIST(geom);
 CREATE INDEX idx_report_geom ON report USING GIST(geom);
