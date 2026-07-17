@@ -32,7 +32,7 @@
 **Interfaces:**
 - Produces: `InfraSummary(int count, Double nearestDistance)`, `CrimeZoneSummary(int count, Double nearestDistance, Integer maxGrade)`, `SafetySummaryResponse(InfraSummary cctv, InfraSummary securityLight, InfraSummary safetyBell, InfraSummary publicOffice, CrimeZoneSummary crimeZone)` — Task 2와 Task 3이 이 타입들을 그대로 사용.
 
-- [ ] **Step 1: 실패하는 테스트 작성**
+- [x] **Step 1: 실패하는 테스트 작성**
 
 `src/test/java/com/safewalk/safety/dto/SafetySummaryResponseSerializationTest.java`:
 
@@ -69,12 +69,12 @@ class SafetySummaryResponseSerializationTest {
 }
 ```
 
-- [ ] **Step 2: 테스트 실패 확인**
+- [x] **Step 2: 테스트 실패 확인**
 
 Run: `./gradlew test --tests "com.safewalk.safety.dto.SafetySummaryResponseSerializationTest"`
 Expected: FAIL (컴파일 에러 — `InfraSummary`, `CrimeZoneSummary`, `SafetySummaryResponse` 클래스가 없음)
 
-- [ ] **Step 3: DTO 구현**
+- [x] **Step 3: DTO 구현**
 
 `src/main/java/com/safewalk/safety/dto/InfraSummary.java`:
 
@@ -109,12 +109,12 @@ public record SafetySummaryResponse(
 }
 ```
 
-- [ ] **Step 4: 테스트 통과 확인**
+- [x] **Step 4: 테스트 통과 확인**
 
 Run: `./gradlew test --tests "com.safewalk.safety.dto.SafetySummaryResponseSerializationTest"`
 Expected: PASS
 
-- [ ] **Step 5: 커밋**
+- [x] **Step 5: 커밋**
 
 ```bash
 git add src/main/java/com/safewalk/safety/dto src/test/java/com/safewalk/safety/dto
@@ -135,7 +135,7 @@ git commit -m "feat: add safety summary response DTOs"
 
 이 테스트는 실제 Supabase DB에 연결한다 (기존 `.env`/`application.properties` 설정 재사용, mock 없음). 읽기 전용 쿼리만 사용하므로 기존 데이터를 건드리지 않는다.
 
-- [ ] **Step 1: 실패하는 테스트 작성**
+- [x] **Step 1: 실패하는 테스트 작성**
 
 `src/test/java/com/safewalk/safety/SafetyQueryServiceIntegrationTest.java`:
 
@@ -190,12 +190,12 @@ class SafetyQueryServiceIntegrationTest {
 }
 ```
 
-- [ ] **Step 2: 테스트 실패 확인**
+- [x] **Step 2: 테스트 실패 확인**
 
 Run: `./gradlew test --tests "com.safewalk.safety.SafetyQueryServiceIntegrationTest"`
 Expected: FAIL (컴파일 에러 — `SafetyQueryService` 클래스가 없음)
 
-- [ ] **Step 3: 서비스 구현**
+- [x] **Step 3: 서비스 구현**
 
 `src/main/java/com/safewalk/safety/SafetyQueryService.java`:
 
@@ -275,12 +275,12 @@ public class SafetyQueryService {
 }
 ```
 
-- [ ] **Step 4: 테스트 통과 확인**
+- [x] **Step 4: 테스트 통과 확인**
 
 Run: `./gradlew test --tests "com.safewalk.safety.SafetyQueryServiceIntegrationTest"`
 Expected: PASS (실제 Supabase DB에 연결되어 두 테스트 모두 통과)
 
-- [ ] **Step 5: 커밋**
+- [x] **Step 5: 커밋**
 
 ```bash
 git add src/main/java/com/safewalk/safety/SafetyQueryService.java src/test/java/com/safewalk/safety/SafetyQueryServiceIntegrationTest.java
@@ -299,7 +299,7 @@ git commit -m "feat: add SafetyQueryService with PostGIS radius queries"
 - Consumes: `SafetyQueryService.getSummary(double lat, double lng): SafetySummaryResponse` (Task 2)
 - Produces: `GET /api/safety/summary?lat={lat}&lng={lng}` HTTP 엔드포인트
 
-- [ ] **Step 1: 실패하는 테스트 작성**
+- [x] **Step 1: 실패하는 테스트 작성**
 
 `src/test/java/com/safewalk/safety/SafetyControllerTest.java`:
 
@@ -361,12 +361,12 @@ class SafetyControllerTest {
 }
 ```
 
-- [ ] **Step 2: 테스트 실패 확인**
+- [x] **Step 2: 테스트 실패 확인**
 
 Run: `./gradlew test --tests "com.safewalk.safety.SafetyControllerTest"`
 Expected: FAIL (컴파일 에러 — `SafetyController` 클래스가 없음)
 
-- [ ] **Step 3: 컨트롤러 구현**
+- [x] **Step 3: 컨트롤러 구현**
 
 `src/main/java/com/safewalk/safety/SafetyController.java`:
 
@@ -402,12 +402,12 @@ public class SafetyController {
 }
 ```
 
-- [ ] **Step 4: 테스트 통과 확인**
+- [x] **Step 4: 테스트 통과 확인**
 
 Run: `./gradlew test --tests "com.safewalk.safety.SafetyControllerTest"`
 Expected: PASS
 
-- [ ] **Step 5: 커밋**
+- [x] **Step 5: 커밋**
 
 ```bash
 git add src/main/java/com/safewalk/safety/SafetyController.java src/test/java/com/safewalk/safety/SafetyControllerTest.java
@@ -423,26 +423,27 @@ git commit -m "feat: add GET /api/safety/summary endpoint"
 **Interfaces:**
 - Consumes: `GET /api/safety/summary?lat={lat}&lng={lng}` (Task 3)
 
-- [ ] **Step 1: 애플리케이션 기동**
+- [x] **Step 1: 애플리케이션 기동**
 
 Run: `./gradlew bootRun`
 Expected: 로그에 `Started SafewalkApplication` 출력
 
-- [ ] **Step 2: 정상 좌표로 호출**
+- [x] **Step 2: 정상 좌표로 호출**
 
 Run: `curl -s "http://localhost:8080/api/safety/summary?lat=37.5665&lng=126.9780"`
 Expected: HTTP 200, `cctv`/`securityLight`/`safetyBell`/`publicOffice`/`crimeZone` 키를 가진 JSON. `publicOffice.count`는 0 (데이터 미적재 상태이므로 정상).
+실측: `{"cctv":{"count":7,"nearestDistance":66.85},"securityLight":{"count":0,"nearestDistance":null},"safetyBell":{"count":1,"nearestDistance":66.80},"publicOffice":{"count":0,"nearestDistance":null},"crimeZone":{"count":0,"nearestDistance":null,"maxGrade":null}}` (200 OK)
 
-- [ ] **Step 3: 파라미터 누락으로 호출**
+- [x] **Step 3: 파라미터 누락으로 호출**
 
 Run: `curl -s -o /dev/null -w "%{http_code}" "http://localhost:8080/api/safety/summary?lng=126.9780"`
 Expected: `400`
 
-- [ ] **Step 4: 범위 밖 좌표로 호출**
+- [x] **Step 4: 범위 밖 좌표로 호출**
 
 Run: `curl -s -o /dev/null -w "%{http_code}" "http://localhost:8080/api/safety/summary?lat=91&lng=126.9780"`
 Expected: `400`
 
-- [ ] **Step 5: 애플리케이션 종료**
+- [x] **Step 5: 애플리케이션 종료**
 
 `bootRun` 프로세스 종료 (Ctrl+C 또는 background 실행 시 `taskkill //F //IM java.exe`)
