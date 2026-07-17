@@ -14,7 +14,7 @@ Supabase(PostgreSQL + PostGIS)에 CCTV, 보안등, 안심벨, 관공서, 범죄�
 
 **포함**:
 - 좌표 1개 기준 반경 내 안전 인프라 요약 조회 API
-- 대상 테이블: `cctv`, `security_light`, `safety_bell`, `public_office`, `crime_zone`
+- 대상 테이블: `cctv`, `security_light`, `safety_bell`, `crime_zone`
 
 **제외 (YAGNI)**:
 - 안전점수 계산/가중치 로직
@@ -28,7 +28,7 @@ Supabase(PostgreSQL + PostGIS)에 CCTV, 보안등, 안심벨, 관공서, 범죄�
 ```
 com.safewalk.safety/
 ├─ SafetyController.java   (엔드포인트)
-├─ SafetyQueryService.java (JdbcTemplate로 5개 테이블 쿼리 + DTO 조립)
+├─ SafetyQueryService.java (JdbcTemplate로 4개 테이블 쿼리 + DTO 조립)
 └─ dto/
    ├─ SafetySummaryResponse.java
    └─ InfraSummary.java (count, nearestDistance[, maxGrade])
@@ -52,7 +52,6 @@ GET /api/safety/summary?lat={lat}&lng={lng}
   "cctv":          { "count": 12, "nearestDistance": 45.2 },
   "securityLight": { "count": 8,  "nearestDistance": 20.1 },
   "safetyBell":    { "count": 1,  "nearestDistance": 180.4 },
-  "publicOffice":  { "count": 0,  "nearestDistance": null },
   "crimeZone":     { "count": 2,  "nearestDistance": 60.0, "maxGrade": 7 }
 }
 ```
@@ -66,7 +65,6 @@ GET /api/safety/summary?lat={lat}&lng={lng}
 | cctv | 150m |
 | securityLight | 100m |
 | safetyBell | 100m |
-| publicOffice | 300m |
 | crimeZone | 150m |
 
 반경 값은 기획서 10.3 가중치 표를 참고한 초기값이며, 상수로 관리하므로 추후 조정이 쉽다.
@@ -75,14 +73,14 @@ GET /api/safety/summary?lat={lat}&lng={lng}
 
 1. `SafetyController`가 `lat`/`lng` 파라미터를 받아 범위 검증 (필수, -90~90 / -180~180)
 2. `SafetyQueryService`가 PostGIS 포인트를 1회 생성: `ST_SetSRID(ST_MakePoint(:lng,:lat), 4326)::geography`
-3. 테이블당 쿼리 1개씩 총 5개 실행 (미터 단위 계산을 위해 `geom::geography` 캐스팅):
+3. 테이블당 쿼리 1개씩 총 4개 실행 (미터 단위 계산을 위해 `geom::geography` 캐스팅):
    ```sql
    SELECT COUNT(*) AS cnt, MIN(ST_Distance(geom::geography, :point)) AS nearest
    FROM cctv
    WHERE ST_DWithin(geom::geography, :point, :radius)
    ```
    `crime_zone`은 `MAX(grade) AS max_grade` 컬럼 추가.
-4. 5개 결과를 `SafetySummaryResponse`로 조립해 반환.
+4. 4개 결과를 `SafetySummaryResponse`로 조립해 반환.
 
 ## 에러 처리
 
@@ -99,4 +97,3 @@ GET /api/safety/summary?lat={lat}&lng={lng}
 
 - 안전점수 산식 (스코어링 로직 자체를 이번 프로젝트 방향에서 제외하기로 함 — 별도 논의 필요)
 - 지도 bounds 기반 레이어 조회 엔드포인트
-- `public_office` 테이블 데이터 미적재 상태 (0건) — 이 API는 스키마 기준으로 동작하므로 영향 없음, 데이터 적재는 별도 트랙

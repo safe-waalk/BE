@@ -4,7 +4,7 @@
 
 **Goal:** 좌표 하나를 받아 반경 내 CCTV/보안등/안심벨/관공서/범죄주의구역을 요약해 반환하는 `GET /api/safety/summary` 엔드포인트를 만든다.
 
-**Architecture:** `com.safewalk.safety` 패키지에 `SafetyController` → `SafetyQueryService`(NamedParameterJdbcTemplate로 PostGIS 쿼리 5개 실행) → `dto` 레코드 3종. 별도 Repository 계층 없음, JPA/Hibernate Spatial 도입 없음.
+**Architecture:** `com.safewalk.safety` 패키지에 `SafetyController` → `SafetyQueryService`(NamedParameterJdbcTemplate로 PostGIS 쿼리 4개 실행) → `dto` 레코드 3종. 별도 Repository 계층 없음, JPA/Hibernate Spatial 도입 없음.
 
 **Tech Stack:** Spring Boot 4.0.7 (spring-boot-starter-webmvc, spring-boot-starter-jdbc), PostgreSQL + PostGIS (Supabase), JUnit 5 + AssertJ + Mockito (spring-boot-starter-*-test), Java 21 records.
 
@@ -13,8 +13,8 @@
 - 패키지: `com.safewalk.safety` (컨트롤러/서비스), `com.safewalk.safety.dto` (DTO)
 - ORM 도입 금지: `NamedParameterJdbcTemplate`/`JdbcTemplate`만 사용 (JPA/Hibernate Spatial 안 씀)
 - 엔드포인트: `GET /api/safety/summary?lat={lat}&lng={lng}`
-- 반경 상수(미터): cctv=150, securityLight=100, safetyBell=100, publicOffice=300, crimeZone=150
-- 응답 필드명: `cctv`, `securityLight`, `safetyBell`, `publicOffice`(모두 `{count, nearestDistance}`), `crimeZone`(`{count, nearestDistance, maxGrade}`)
+- 반경 상수(미터): cctv=150, securityLight=100, safetyBell=100, crimeZone=150
+- 응답 필드명: `cctv`, `securityLight`, `safetyBell`(모두 `{count, nearestDistance}`), `crimeZone`(`{count, nearestDistance, maxGrade}`)
 - 거리 단위는 미터, `geom::geography` 캐스팅으로 계산 (도(degree) 단위 아님)
 - 검증: `lat` -90~90, `lng` -180~180, 누락 시 400. 전역 예외 핸들러 새로 만들지 않음 — `ResponseStatusException` 직접 사용
 - 참고 스펙: `docs/superpowers/specs/2026-07-17-spatial-safety-query-api-design.md`
