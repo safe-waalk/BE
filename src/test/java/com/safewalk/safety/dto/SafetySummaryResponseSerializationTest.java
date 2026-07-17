@@ -13,7 +13,6 @@ class SafetySummaryResponseSerializationTest {
                 new InfraSummary(12, 45.2),
                 new InfraSummary(8, 20.1),
                 new InfraSummary(1, 180.4),
-                new InfraSummary(0, null),
                 new CrimeZoneSummary(2, 60.0, 7)
         );
 
@@ -22,7 +21,7 @@ class SafetySummaryResponseSerializationTest {
         assertThat(json).contains("\"cctv\"");
         assertThat(json).contains("\"securityLight\"");
         assertThat(json).contains("\"safetyBell\"");
-        assertThat(json).contains("\"publicOffice\"");
+        assertThat(json).doesNotContain("\"publicOffice\"");
         assertThat(json).contains("\"crimeZone\"");
         assertThat(json).contains("\"nearestDistance\":45.2");
         assertThat(json).contains("\"maxGrade\":7");

@@ -42,7 +42,6 @@ class SafetyControllerTest {
                 new InfraSummary(12, 45.2),
                 new InfraSummary(8, 20.1),
                 new InfraSummary(1, 180.4),
-                new InfraSummary(0, null),
                 new CrimeZoneSummary(2, 60.0, 7)
         );
         when(safetyQueryService.getSummary(anyDouble(), anyDouble())).thenReturn(mockResponse);

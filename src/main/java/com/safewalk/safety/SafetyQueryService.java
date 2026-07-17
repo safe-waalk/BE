@@ -15,7 +15,6 @@ public class SafetyQueryService {
     private static final double CCTV_RADIUS_M = 150.0;
     private static final double SECURITY_LIGHT_RADIUS_M = 100.0;
     private static final double SAFETY_BELL_RADIUS_M = 100.0;
-    private static final double PUBLIC_OFFICE_RADIUS_M = 300.0;
     private static final double CRIME_ZONE_RADIUS_M = 150.0;
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
@@ -29,7 +28,6 @@ public class SafetyQueryService {
                 queryInfra("cctv", lat, lng, CCTV_RADIUS_M),
                 queryInfra("security_light", lat, lng, SECURITY_LIGHT_RADIUS_M),
                 queryInfra("safety_bell", lat, lng, SAFETY_BELL_RADIUS_M),
-                queryInfra("public_office", lat, lng, PUBLIC_OFFICE_RADIUS_M),
                 queryCrimeZone(lat, lng, CRIME_ZONE_RADIUS_M)
         );
     }

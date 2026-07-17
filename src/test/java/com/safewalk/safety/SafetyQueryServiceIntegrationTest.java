@@ -28,7 +28,6 @@ class SafetyQueryServiceIntegrationTest {
         assertThat(response.cctv().nearestDistance()).isNull();
         assertThat(response.securityLight().count()).isZero();
         assertThat(response.safetyBell().count()).isZero();
-        assertThat(response.publicOffice().count()).isZero();
         assertThat(response.crimeZone().count()).isZero();
         assertThat(response.crimeZone().maxGrade()).isNull();
     }
