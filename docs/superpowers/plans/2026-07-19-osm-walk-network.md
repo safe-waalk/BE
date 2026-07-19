@@ -3,6 +3,8 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 >
 > **이 플랜은 일반적인 Spring Boot 기능 플랜과 다르다.** Java 코드가 없고, Docker/psql로 실행하는 1회성 데이터 적재 절차다. "테스트"는 JUnit이 아니라 각 단계 뒤에 실행하는 검증 SQL/명령이다.
+>
+> **⚠️ 구현 완료됨 — 이 문서의 명령어를 그대로 재실행하지 말 것.** 실제 실행 과정에서 아래 스텝들의 명령이 몇 군데 틀린 것으로 드러났다 (Windows Git Bash의 Docker 볼륨 경로 변환 문제, `iboates/osm2pgrouting`이 `.pbf`를 직접 못 읽는 문제, `PGPASSWORD`를 무시하는 문제, 기본 `--chunk` 값이 Supabase 커넥션 풀러에서 깨지는 문제 등). **커밋된 실제 스크립트(`db/download-seoul-osm.sh`, `db/load-osm-walk-network.sh`, `db/verify-walk-network.sql`)가 수정된 최종 버전이며, 재실행이 필요하면 이 문서가 아니라 그 스크립트들을 실행할 것.** 각 수정의 근거는 `.superpowers/sdd/task-{2,3,4}-report.md`(로컬 전용, git에는 없음)에 남아있다.
 
 **Goal:** 서울 지역 OSM 도보 가능 도로망을 Supabase(PostGIS + pgRouting)에 그래프(노드+엣지)로 적재하고, `pgr_dijkstra`로 실제 경로가 계산되는지 검증한다.
 
