@@ -54,7 +54,7 @@ public class ReportService {
                 rs.getString("status"),
                 rs.getDouble("lat"),
                 rs.getDouble("lng"),
-                rs.getTimestamp("created_at").toLocalDateTime()
+                rs.getTimestamp("created_at") != null ? rs.getTimestamp("created_at").toLocalDateTime() : null
         );
     }
 }

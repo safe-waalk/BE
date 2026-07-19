@@ -37,7 +37,7 @@ CREATE TABLE report (
     id BIGSERIAL PRIMARY KEY,
     content TEXT NOT NULL,            -- 사용자가 쓴 원문
     category VARCHAR(30),             -- LLM이 파싱한 카테고리 (LIGHTING 등)
-    severity VARCHAR(10),             -- LLM이 파싱한 위험도 (HIGH/MID/LOW)
+    severity VARCHAR(10),             -- LLM이 파싱한 위험도 (HIGH/MEDIUM/LOW)
     status VARCHAR(20) DEFAULT 'PENDING',  -- PENDING / APPROVED / REJECTED
     geom GEOMETRY(Point, 4326),
     created_at TIMESTAMP DEFAULT now()
