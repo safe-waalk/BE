@@ -36,7 +36,13 @@ public class ReportService {
     }
 
     public List<ReportResponse> findAll() {
-        throw new UnsupportedOperationException("implemented in Task 2");
+        String sql = """
+                SELECT id, content, category, severity, status,
+                       ST_Y(geom) AS lat, ST_X(geom) AS lng, created_at
+                FROM report
+                ORDER BY created_at DESC
+                """;
+        return jdbcTemplate.query(sql, new MapSqlParameterSource(), ReportService::mapRow);
     }
 
     private static ReportResponse mapRow(ResultSet rs, int rowNum) throws SQLException {

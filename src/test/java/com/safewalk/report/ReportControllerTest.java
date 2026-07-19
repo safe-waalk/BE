@@ -9,9 +9,11 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -91,5 +93,18 @@ class ReportControllerTest {
                 .andExpect(jsonPath("$.status").value("PENDING"))
                 .andExpect(jsonPath("$.category").value("LIGHTING"))
                 .andExpect(jsonPath("$.severity").value("HIGH"));
+    }
+
+    @Test
+    void getReportsReturns200WithList() throws Exception {
+        when(reportService.findAll()).thenReturn(List.of(
+                new ReportResponse(1L, "테스트 신고", "LIGHTING", "HIGH", "PENDING",
+                        37.5, 127.0, LocalDateTime.of(2026, 7, 19, 12, 0))
+        ));
+        mockMvc.perform(get("/api/reports"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(1))
+                .andExpect(jsonPath("$[0].status").value("PENDING"))
+                .andExpect(jsonPath("$[0].category").value("LIGHTING"));
     }
 }

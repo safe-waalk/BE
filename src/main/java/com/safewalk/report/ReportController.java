@@ -48,6 +48,6 @@ public class ReportController {
 
     @GetMapping("/api/reports")
     public List<ReportResponse> listReports() {
-        throw new UnsupportedOperationException("implemented in Task 2");
+        return reportService.findAll();
     }
 }
