@@ -56,7 +56,7 @@ FE를 포함한 외부 소비자를 위한 API 계약은 이 문서를 기준으
 | GET | `/api/safety/summary` | 좌표 기준 반경 내 안전 인프라 집계 | `main` |
 | GET | `/api/safety/layers` | 지도 bounds 안의 개별 좌표 조회 | `main` |
 | GET | `/api/safety/score` | 좌표 기준 안전점수(0~100) | `main` |
-| POST/GET | `/api/reports` | 신고 등록/조회 | `TW` 브랜치 구현 완료, **`main` 미병합** |
+| POST/GET | `/api/reports` | 신고 등록/조회 | `main` |
 | GET | `/api/health/db`, `/api/health/db/counts` | 헬스체크 | `main` |
 
 ### CORS ⚠️
@@ -121,13 +121,11 @@ BE에 CORS 설정이 없다. 로컬 프론트 개발은 Vite dev proxy 등으로
 
 `crimePenalty`/`cctvBonus`/`lightBonus`는 반올림하지 않은 소수 (디버깅/투명성 목적).
 
-### `POST` / `GET /api/reports` — ⚠️ `TW` 브랜치, `main` 미병합
-
-병합 전까지 계약이 바뀔 수 있음. 현재 `TW` 브랜치 기준:
+### `POST` / `GET /api/reports`
 
 ```
 POST /api/reports
-{"content": "...", "lat": 37.5665, "lng": 126.9780, "category": "LIGHTING", "severity": "MID"}
+{"content": "...", "lat": 37.5665, "lng": 126.9780, "category": "LIGHTING", "severity": "MEDIUM"}
 → 201, ReportResponse 반환
 
 GET /api/reports
@@ -141,7 +139,7 @@ GET /api/reports
 - `GET`은 bounds 파라미터가 없다 — 전체 목록을 반환 (지도 bounds 조회가 필요해지면 별도 논의)
 
 ```json
-{"id": 1, "content": "...", "category": "LIGHTING", "severity": "MID", "status": "PENDING", "lat": 37.5665, "lng": 126.9780, "createdAt": "2026-07-19T18:50:00"}
+{"id": 1, "content": "...", "category": "LIGHTING", "severity": "MEDIUM", "status": "PENDING", "lat": 37.5665, "lng": 126.9780, "createdAt": "2026-07-19T18:50:00"}
 ```
 
 ### `GET /api/health/db`, `GET /api/health/db/counts`
