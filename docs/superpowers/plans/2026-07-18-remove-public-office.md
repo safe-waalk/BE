@@ -30,7 +30,7 @@
 
 이 레코드는 3개 테스트 파일에서 동시에 생성자로 사용되므로, 필드를 제거하면 세 파일 모두 즉시 컴파일 에러가 난다. 테스트를 먼저 4-arg로 고쳐서 컴파일 에러(RED)를 만들고, 프로덕션 코드를 고쳐서 통과(GREEN)시킨다.
 
-- [ ] **Step 1: 테스트 3종을 4-arg 시그니처로 수정**
+- [x] **Step 1: 테스트 3종을 4-arg 시그니처로 수정**
 
 `src/test/java/com/safewalk/safety/dto/SafetySummaryResponseSerializationTest.java` 전체를 다음으로 교체:
 
@@ -177,12 +177,12 @@ class SafetyControllerTest {
 }
 ```
 
-- [ ] **Step 2: 컴파일 에러(RED) 확인**
+- [x] **Step 2: 컴파일 에러(RED) 확인**
 
 Run: `./gradlew compileTestJava`
 Expected: FAIL — `SafetySummaryResponse`의 생성자가 5개 인자를 요구하는데 테스트가 4개만 넘겨서 컴파일 에러
 
-- [ ] **Step 3: DTO에서 publicOffice 필드 제거**
+- [x] **Step 3: DTO에서 publicOffice 필드 제거**
 
 `src/main/java/com/safewalk/safety/dto/SafetySummaryResponse.java` 전체를 다음으로 교체:
 
@@ -198,7 +198,7 @@ public record SafetySummaryResponse(
 }
 ```
 
-- [ ] **Step 4: SafetyQueryService에서 관공서 쿼리 제거**
+- [x] **Step 4: SafetyQueryService에서 관공서 쿼리 제거**
 
 `src/main/java/com/safewalk/safety/SafetyQueryService.java` 전체를 다음으로 교체 (`PUBLIC_OFFICE_RADIUS_M` 상수와 `queryInfra("public_office", ...)` 호출 삭제):
 
@@ -276,12 +276,12 @@ public class SafetyQueryService {
 }
 ```
 
-- [ ] **Step 5: 테스트 통과(GREEN) 확인**
+- [x] **Step 5: 테스트 통과(GREEN) 확인**
 
 Run: `./gradlew test --rerun-tasks`
 Expected: PASS (전체 테스트, 실제 Supabase DB 연동 포함)
 
-- [ ] **Step 6: 커밋**
+- [x] **Step 6: 커밋**
 
 ```bash
 git add src/main/java/com/safewalk/safety/dto/SafetySummaryResponse.java src/main/java/com/safewalk/safety/SafetyQueryService.java src/test/java/com/safewalk/safety/dto/SafetySummaryResponseSerializationTest.java src/test/java/com/safewalk/safety/SafetyQueryServiceIntegrationTest.java src/test/java/com/safewalk/safety/SafetyControllerTest.java
@@ -297,7 +297,7 @@ git commit -m "refactor: remove publicOffice from safety summary API"
 
 **Interfaces:** 없음 (다른 Task와 의존 관계 없음)
 
-- [ ] **Step 1: 테이블 목록에서 public_office 제거**
+- [x] **Step 1: 테이블 목록에서 public_office 제거**
 
 `src/main/java/com/safewalk/HealthController.java`의 27번째 줄:
 
@@ -311,12 +311,12 @@ git commit -m "refactor: remove publicOffice from safety summary API"
 		String[] tables = {"crime_zone", "cctv", "security_light", "safety_bell", "report"};
 ```
 
-- [ ] **Step 2: 컴파일 확인**
+- [x] **Step 2: 컴파일 확인**
 
 Run: `./gradlew compileJava`
 Expected: BUILD SUCCESSFUL
 
-- [ ] **Step 3: 커밋**
+- [x] **Step 3: 커밋**
 
 ```bash
 git add src/main/java/com/safewalk/HealthController.java
@@ -332,7 +332,7 @@ git commit -m "refactor: drop public_office from health check table counts"
 
 **Interfaces:** 없음 (문서 성격의 스키마 파일, 실행되지 않음 — 실제 Supabase DB는 변경하지 않는다)
 
-- [ ] **Step 1: public_office 테이블/인덱스 정의 삭제**
+- [x] **Step 1: public_office 테이블/인덱스 정의 삭제**
 
 `db/schema.sql`에서 35~43번째 줄(`-- ⑤ 관공서 ...` 주석과 `CREATE TABLE public_office (...)` 블록 전체)을 삭제하고, 63번째 줄(`CREATE INDEX idx_office_geom ON public_office USING GIST(geom);`)을 삭제. 수정 후 전체 파일:
 
@@ -392,7 +392,7 @@ CREATE INDEX idx_bell_geom ON safety_bell USING GIST(geom);
 CREATE INDEX idx_report_geom ON report USING GIST(geom);
 ```
 
-- [ ] **Step 2: 커밋**
+- [x] **Step 2: 커밋**
 
 ```bash
 git add db/schema.sql
@@ -409,13 +409,13 @@ git commit -m "docs: remove public_office table definition from schema.sql"
 
 **Interfaces:** 없음 (문서 전용, 코드에 영향 없음)
 
-- [ ] **Step 1: 두 문서에서 publicOffice/public_office 언급을 찾아 제거하거나 "제거됨" 각주 추가**
+- [x] **Step 1: 두 문서에서 publicOffice/public_office 언급을 찾아 제거하거나 "제거됨" 각주 추가**
 
 Run: `grep -rn -i "public.office" docs/superpowers/specs/2026-07-17-spatial-safety-query-api-design.md docs/superpowers/plans/2026-07-17-spatial-safety-query-api.md`
 
 각 위치를 확인하고, 필드/반경 목록에서 publicOffice 항목을 삭제한다. 과거 진행 기록(이미 완료 표시된 체크박스, 실측 curl 결과 등 히스토리성 서술)은 그대로 두고 건드리지 않는다 — 스펙/계획의 "현재 사양"을 설명하는 부분만 수정 대상이다.
 
-- [ ] **Step 2: 커밋**
+- [x] **Step 2: 커밋**
 
 ```bash
 git add docs/superpowers/specs/2026-07-17-spatial-safety-query-api-design.md docs/superpowers/plans/2026-07-17-spatial-safety-query-api.md
@@ -431,21 +431,25 @@ git commit -m "docs: update safety summary spec/plan to drop publicOffice"
 **Interfaces:**
 - Consumes: `GET /api/safety/summary?lat={lat}&lng={lng}` (Task 1), `GET /api/health/db/counts` (Task 2)
 
-- [ ] **Step 1: 애플리케이션 기동**
+- [x] **Step 1: 애플리케이션 기동**
 
 Run: `./gradlew bootRun` (백그라운드 실행)
 Expected: 로그에 `Started SafewalkApplication` 출력
+실측: `Started SafewalkApplication in 1.052 seconds` 로그 확인, Tomcat 8080 포트로 기동됨
 
-- [ ] **Step 2: Safety Summary 응답에 publicOffice 키가 없는지 확인**
+- [x] **Step 2: Safety Summary 응답에 publicOffice 키가 없는지 확인**
 
 Run: `curl -s "http://localhost:8080/api/safety/summary?lat=37.5665&lng=126.9780"`
 Expected: HTTP 200, JSON에 `cctv`/`securityLight`/`safetyBell`/`crimeZone` 키만 존재하고 `publicOffice` 키는 없음
+실측: `{"cctv":{"count":7,"nearestDistance":66.85430201},"securityLight":{"count":0,"nearestDistance":null},"safetyBell":{"count":1,"nearestDistance":66.80278256},"crimeZone":{"count":0,"nearestDistance":null,"maxGrade":null}}` — `publicOffice` 키 없음 확인
 
-- [ ] **Step 3: 헬스체크 카운트 응답에 public_office 키가 없는지 확인**
+- [x] **Step 3: 헬스체크 카운트 응답에 public_office 키가 없는지 확인**
 
 Run: `curl -s "http://localhost:8080/api/health/db/counts"`
 Expected: HTTP 200, JSON에 `crime_zone`/`cctv`/`security_light`/`safety_bell`/`report` 키만 존재하고 `public_office` 키는 없음
+실측: `{"crime_zone":5738,"cctv":134492,"security_light":461451,"safety_bell":67927,"report":0}` — `public_office` 키 없음 확인
 
-- [ ] **Step 4: 애플리케이션 종료**
+- [x] **Step 4: 애플리케이션 종료**
 
 `bootRun` 프로세스 종료 (`netstat -ano`로 8080 포트 PID 확인 후 `taskkill //F //PID <pid>`)
+실측: PID 1596 종료, 8080 포트 해제 확인
