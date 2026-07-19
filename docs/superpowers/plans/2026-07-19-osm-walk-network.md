@@ -33,7 +33,7 @@
 **Interfaces:**
 - Produces: Supabase DB에 `pgrouting` PostgreSQL 확장이 활성화된 상태 — Task 3(적재)이 이 확장의 `pgr_dijkstra` 등 함수에 의존, Task 4(검증)도 마찬가지.
 
-- [ ] **Step 1: 확장 활성화 SQL 파일 작성**
+- [x] **Step 1: 확장 활성화 SQL 파일 작성**
 
 `db/pgrouting-extension.sql`:
 
@@ -44,7 +44,7 @@
 CREATE EXTENSION IF NOT EXISTS pgrouting;
 ```
 
-- [ ] **Step 2: 실행**
+- [x] **Step 2: 실행**
 
 Run (bash, `.env` 로드 후):
 ```bash
@@ -54,15 +54,16 @@ psql "host=$SUPABASE_DB_HOST port=$SUPABASE_DB_PORT dbname=$SUPABASE_DB_NAME use
 ```
 Expected: `CREATE EXTENSION` 출력 (이미 있으면 `NOTICE: extension "pgrouting" already exists, skipping`)
 
-- [ ] **Step 3: 검증**
+- [x] **Step 3: 검증**
 
 Run:
 ```bash
 psql "host=$SUPABASE_DB_HOST port=$SUPABASE_DB_PORT dbname=$SUPABASE_DB_NAME user=$SUPABASE_DB_USER sslmode=require" -c "SELECT extname, extversion FROM pg_extension WHERE extname = 'pgrouting';"
 ```
 Expected: `pgrouting` 행 1개 반환
+실측: `pgrouting | 3.4.1` 확인
 
-- [ ] **Step 4: 커밋**
+- [x] **Step 4: 커밋**
 
 ```bash
 git add db/pgrouting-extension.sql
@@ -80,12 +81,12 @@ git commit -m "feat: add pgRouting extension activation script"
 **Interfaces:**
 - Produces: `osm-data/seoul.osm.pbf` 파일 (git에는 커밋 안 됨) — Task 3이 이 파일을 입력으로 사용.
 
-- [ ] **Step 1: Docker 동작 확인**
+- [x] **Step 1: Docker 동작 확인**
 
 Run: `docker info`
 Expected: 에러 없이 Docker 정보 출력 (데몬이 안 떠 있으면 Docker Desktop을 먼저 실행)
 
-- [ ] **Step 2: `.gitignore`에 데이터 디렉터리 추가**
+- [x] **Step 2: `.gitignore`에 데이터 디렉터리 추가**
 
 `.gitignore`에 다음 줄 추가:
 
@@ -93,7 +94,7 @@ Expected: 에러 없이 Docker 정보 출력 (데몬이 안 떠 있으면 Docker
 osm-data/
 ```
 
-- [ ] **Step 3: 다운로드+클리핑 스크립트 작성**
+- [x] **Step 3: 다운로드+클리핑 스크립트 작성**
 
 `db/download-seoul-osm.sh`:
 
@@ -119,7 +120,7 @@ echo "Done: osm-data/seoul.osm.pbf"
 ls -lh osm-data/seoul.osm.pbf
 ```
 
-- [ ] **Step 4: 실행**
+- [x] **Step 4: 실행**
 
 Run:
 ```bash
@@ -127,13 +128,15 @@ chmod +x db/download-seoul-osm.sh
 ./db/download-seoul-osm.sh
 ```
 Expected: `osm-data/seoul.osm.pbf` 생성, 원본(261MB)보다 훨씬 작은 크기로 출력됨 (서울만 추출했으므로)
+실측: 원본 271MB → 클리핑 후 약 29MB (`iboates/osmium` 사용, Windows Git Bash에서는 `MSYS_NO_PATHCONV=1` 필요 — `db/download-seoul-osm.sh` 참고)
 
-- [ ] **Step 5: 검증**
+- [x] **Step 5: 검증**
 
 Run: `ls -la osm-data/seoul.osm.pbf`
 Expected: 파일이 존재하고 크기가 0바이트가 아님
+실측: 30,293,342 bytes 확인
 
-- [ ] **Step 6: 커밋**
+- [x] **Step 6: 커밋**
 
 ```bash
 git add .gitignore db/download-seoul-osm.sh
@@ -151,7 +154,7 @@ git commit -m "feat: add script to download and clip Seoul OSM extract"
 - Consumes: `osm-data/seoul.osm.pbf` (Task 2)
 - Produces: Supabase DB에 `ways`, `ways_vertices_pgr` 테이블 — Task 4가 이 테이블들을 쿼리한다.
 
-- [ ] **Step 1: 적재 스크립트 작성**
+- [x] **Step 1: 적재 스크립트 작성**
 
 `db/load-osm-walk-network.sh`:
 
@@ -173,7 +176,7 @@ docker run --rm -v "$(pwd)/osm-data:/data" \
   --f /data/seoul.osm.pbf
 ```
 
-- [ ] **Step 2: 실행**
+- [x] **Step 2: 실행**
 
 Run:
 ```bash
@@ -182,7 +185,7 @@ chmod +x db/load-osm-walk-network.sh
 ```
 Expected: 에러 없이 종료, "ways", "ways_vertices_pgr" 등 테이블 생성/적재 로그 출력
 
-- [ ] **Step 3: 검증**
+- [x] **Step 3: 검증**
 
 Run:
 ```bash
@@ -190,8 +193,9 @@ psql "host=$SUPABASE_DB_HOST port=$SUPABASE_DB_PORT dbname=$SUPABASE_DB_NAME use
   -c "SELECT (SELECT COUNT(*) FROM ways) AS edges, (SELECT COUNT(*) FROM ways_vertices_pgr) AS nodes;"
 ```
 Expected: `edges`, `nodes` 둘 다 0보다 훨씬 큰 값 (서울 지역 규모면 최소 수만 단위)
+실측: `ways` 419,385 edges, `ways_vertices_pgr` 301,489 nodes (`iboates/osm2pgrouting`은 `.pbf`를 직접 못 읽어 osmium으로 XML 변환 후 적재, `PGPASSWORD` 대신 `--password` 플래그 필요, 기본 `--chunk 20000`은 Supabase 커넥션 풀러에서 way 300000 지점에서 재현성 있게 깨져서 `--chunk 1000000`으로 우회 — `db/load-osm-walk-network.sh` 참고)
 
-- [ ] **Step 4: 커밋**
+- [x] **Step 4: 커밋**
 
 ```bash
 git add db/load-osm-walk-network.sh
@@ -208,7 +212,7 @@ git commit -m "feat: add script to load Seoul OSM data into pgRouting tables"
 **Interfaces:**
 - Consumes: `ways`, `ways_vertices_pgr` (Task 3)
 
-- [ ] **Step 1: 검증 쿼리 작성**
+- [x] **Step 1: 검증 쿼리 작성**
 
 `db/verify-walk-network.sql`:
 
@@ -223,19 +227,21 @@ SELECT * FROM pgr_dijkstra(
 );
 ```
 
-- [ ] **Step 2: 실행**
+- [x] **Step 2: 실행**
 
 Run:
 ```bash
 psql "host=$SUPABASE_DB_HOST port=$SUPABASE_DB_PORT dbname=$SUPABASE_DB_NAME user=$SUPABASE_DB_USER sslmode=require" -f db/verify-walk-network.sql
 ```
 Expected: 빈 결과가 아니라, `seq`/`node`/`edge`/`cost`/`agg_cost` 컬럼을 가진 여러 행이 반환됨 (경로가 여러 엣지로 구성됨을 의미)
+실측: 39행 반환(38홉), 마지막 행 `edge=-1`로 정상 종료, `agg_cost ≈ 0.0127`(도 단위, 약 1.4km — 두 테스트 좌표 간 직선거리 약 1km 기준으로 타당한 도보 우회 비율)
 
-- [ ] **Step 3: 결과 확인**
+- [x] **Step 3: 결과 확인**
 
 반환된 행들의 `node` 값을 따라가 보면 시작 정점에서 도착 정점까지 이어지는지 확인. 마지막 행의 `edge`가 `-1`이면 정상 종료(도착 지점 도달)를 의미한다.
+실측: 시작 정점(264212)부터 도착 정점(22014)까지 노드가 끊김 없이 연결됨 확인
 
-- [ ] **Step 4: 커밋**
+- [x] **Step 4: 커밋**
 
 ```bash
 git add db/verify-walk-network.sql
