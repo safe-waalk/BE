@@ -35,7 +35,7 @@
 
 이 테스트는 DB 없이 순수 단위 테스트로 실행된다 (`SafetySummaryResponse`를 직접 생성해서 입력으로 준다).
 
-- [ ] **Step 1: 실패하는 테스트 작성**
+- [x] **Step 1: 실패하는 테스트 작성**
 
 `src/test/java/com/safewalk/safety/SafetyScoreCalculatorTest.java`:
 
@@ -118,12 +118,12 @@ class SafetyScoreCalculatorTest {
 }
 ```
 
-- [ ] **Step 2: 테스트 실패 확인**
+- [x] **Step 2: 테스트 실패 확인**
 
 Run: `./gradlew test --tests "com.safewalk.safety.SafetyScoreCalculatorTest"`
 Expected: FAIL — `SafetyScoreCalculator`/`SafetyScoreResponse` 클래스가 없어서 컴파일 에러
 
-- [ ] **Step 3: DTO 구현**
+- [x] **Step 3: DTO 구현**
 
 `src/main/java/com/safewalk/safety/dto/SafetyScoreResponse.java`:
 
@@ -134,7 +134,7 @@ public record SafetyScoreResponse(int score, double crimePenalty, double cctvBon
 }
 ```
 
-- [ ] **Step 4: Calculator 구현**
+- [x] **Step 4: Calculator 구현**
 
 `src/main/java/com/safewalk/safety/SafetyScoreCalculator.java`:
 
@@ -195,12 +195,12 @@ public class SafetyScoreCalculator {
 }
 ```
 
-- [ ] **Step 5: 테스트 통과 확인**
+- [x] **Step 5: 테스트 통과 확인**
 
 Run: `./gradlew test --tests "com.safewalk.safety.SafetyScoreCalculatorTest"`
 Expected: PASS (4개 테스트 모두 통과, DB 연결 없음)
 
-- [ ] **Step 6: 커밋**
+- [x] **Step 6: 커밋**
 
 ```bash
 git add src/main/java/com/safewalk/safety/dto/SafetyScoreResponse.java src/main/java/com/safewalk/safety/SafetyScoreCalculator.java src/test/java/com/safewalk/safety/SafetyScoreCalculatorTest.java
@@ -219,7 +219,7 @@ git commit -m "feat: add SafetyScoreCalculator with point-based scoring formula"
 - Consumes: `SafetyQueryService.getSummary(double lat, double lng): SafetySummaryResponse` (기존, 무변경), `SafetyScoreCalculator.calculate(SafetySummaryResponse): SafetyScoreResponse` (Task 1)
 - Produces: `GET /api/safety/score?lat={}&lng={}` HTTP 엔드포인트
 
-- [ ] **Step 1: 실패하는 테스트 작성**
+- [x] **Step 1: 실패하는 테스트 작성**
 
 `src/test/java/com/safewalk/safety/SafetyScoreControllerTest.java`:
 
@@ -288,12 +288,12 @@ class SafetyScoreControllerTest {
 }
 ```
 
-- [ ] **Step 2: 테스트 실패 확인**
+- [x] **Step 2: 테스트 실패 확인**
 
 Run: `./gradlew test --tests "com.safewalk.safety.SafetyScoreControllerTest"`
 Expected: FAIL — `SafetyScoreController` 클래스가 없어서 컴파일 에러
 
-- [ ] **Step 3: 컨트롤러 구현**
+- [x] **Step 3: 컨트롤러 구현**
 
 `src/main/java/com/safewalk/safety/SafetyScoreController.java`:
 
@@ -330,12 +330,12 @@ public class SafetyScoreController {
 }
 ```
 
-- [ ] **Step 4: 테스트 통과 확인**
+- [x] **Step 4: 테스트 통과 확인**
 
 Run: `./gradlew test --tests "com.safewalk.safety.SafetyScoreControllerTest"`
 Expected: PASS
 
-- [ ] **Step 5: 커밋**
+- [x] **Step 5: 커밋**
 
 ```bash
 git add src/main/java/com/safewalk/safety/SafetyScoreController.java src/test/java/com/safewalk/safety/SafetyScoreControllerTest.java
@@ -351,31 +351,37 @@ git commit -m "feat: add GET /api/safety/score endpoint"
 **Interfaces:**
 - Consumes: `GET /api/safety/score?lat={}&lng={}` (Task 2)
 
-- [ ] **Step 1: 애플리케이션 기동**
+- [x] **Step 1: 애플리케이션 기동**
 
 Run: `./gradlew bootRun` (백그라운드 실행)
 Expected: 로그에 `Started SafewalkApplication` 출력
+실측: `Started SafewalkApplication in 0.972 seconds` 로그 확인, Tomcat 8080 포트로 기동됨
 
-- [ ] **Step 2: 실제 CCTV/보안등이 있는 좌표로 점수 조회**
+- [x] **Step 2: 실제 CCTV/보안등이 있는 좌표로 점수 조회**
 
 Run: `curl -s "http://localhost:8080/api/safety/score?lat=37.5665&lng=126.9780"`
 Expected: HTTP 200, `{"score": <0~100 사이 정수>, "crimePenalty": <double>, "cctvBonus": <double>, "lightBonus": <double>}` 형태. `score`가 `70 - crimePenalty + cctvBonus + lightBonus`를 반올림/clamp한 값과 일치하는지 눈으로 확인
+실측: `{"score":88,"crimePenalty":0.0,"cctvBonus":18.314569799,"lightBonus":0.0}` — 70-0+18.31+0=88.31 → 반올림 88, 일치 확인
 
-- [ ] **Step 3: 데이터가 거의 없을 법한 좌표로 점수 조회**
+- [x] **Step 3: 데이터가 거의 없을 법한 좌표로 점수 조회**
 
 Run: `curl -s "http://localhost:8080/api/safety/score?lat=0.0&lng=-160.0"` (남태평양 한가운데)
 Expected: HTTP 200, `{"score":70,"crimePenalty":0.0,"cctvBonus":0.0,"lightBonus":0.0}`
+실측: `{"score":70,"crimePenalty":0.0,"cctvBonus":0.0,"lightBonus":0.0}` — 기대값과 정확히 일치
 
-- [ ] **Step 4: 파라미터 누락으로 400 확인**
+- [x] **Step 4: 파라미터 누락으로 400 확인**
 
 Run: `curl -s -o /dev/null -w "%{http_code}" "http://localhost:8080/api/safety/score?lng=126.9780"`
 Expected: `400`
+실측: `400`
 
-- [ ] **Step 5: 범위 밖 좌표로 400 확인**
+- [x] **Step 5: 범위 밖 좌표로 400 확인**
 
 Run: `curl -s -o /dev/null -w "%{http_code}" "http://localhost:8080/api/safety/score?lat=91&lng=126.9780"`
 Expected: `400`
+실측: `400`
 
-- [ ] **Step 6: 애플리케이션 종료**
+- [x] **Step 6: 애플리케이션 종료**
 
 `bootRun` 프로세스 종료 (`netstat -ano`로 8080 포트 PID 확인 후 `taskkill //F //PID <pid>`)
+실측: PID 1508 종료, 8080 포트 해제 확인
