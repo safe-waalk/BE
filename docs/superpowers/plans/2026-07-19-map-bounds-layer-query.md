@@ -35,7 +35,7 @@
 **Interfaces:**
 - Produces: `CctvPoint(long id, double lat, double lng, String address, int cameraCount)`, `SecurityLightPoint(long id, double lat, double lng, String address)`, `SafetyBellPoint(long id, double lat, double lng, String address)`, `CrimeZonePoint(long id, double lat, double lng, int grade)`, `SafetyLayerResponse(List<CctvPoint> cctv, List<SecurityLightPoint> securityLight, List<SafetyBellPoint> safetyBell, List<CrimeZonePoint> crimeZone)` — Task 2와 Task 3이 이 타입들을 그대로 사용.
 
-- [ ] **Step 1: 실패하는 테스트 작성**
+- [x] **Step 1: 실패하는 테스트 작성**
 
 `src/test/java/com/safewalk/safety/dto/SafetyLayerResponseSerializationTest.java`:
 
@@ -72,12 +72,12 @@ class SafetyLayerResponseSerializationTest {
 }
 ```
 
-- [ ] **Step 2: 테스트 실패 확인**
+- [x] **Step 2: 테스트 실패 확인**
 
 Run: `./gradlew test --tests "com.safewalk.safety.dto.SafetyLayerResponseSerializationTest"`
 Expected: FAIL (컴파일 에러 — `CctvPoint`, `CrimeZonePoint`, `SafetyLayerResponse` 클래스가 없음)
 
-- [ ] **Step 3: DTO 구현**
+- [x] **Step 3: DTO 구현**
 
 `src/main/java/com/safewalk/safety/dto/CctvPoint.java`:
 
@@ -134,12 +134,12 @@ public record SafetyLayerResponse(
 }
 ```
 
-- [ ] **Step 4: 테스트 통과 확인**
+- [x] **Step 4: 테스트 통과 확인**
 
 Run: `./gradlew test --tests "com.safewalk.safety.dto.SafetyLayerResponseSerializationTest"`
 Expected: PASS
 
-- [ ] **Step 5: 커밋**
+- [x] **Step 5: 커밋**
 
 ```bash
 git add src/main/java/com/safewalk/safety/dto/CctvPoint.java src/main/java/com/safewalk/safety/dto/SecurityLightPoint.java src/main/java/com/safewalk/safety/dto/SafetyBellPoint.java src/main/java/com/safewalk/safety/dto/CrimeZonePoint.java src/main/java/com/safewalk/safety/dto/SafetyLayerResponse.java src/test/java/com/safewalk/safety/dto/SafetyLayerResponseSerializationTest.java
@@ -160,7 +160,7 @@ git commit -m "feat: add safety layer response DTOs"
 
 이 테스트는 실제 Supabase DB에 연결한다 (기존 `.env`/`application.properties` 설정 재사용, mock 없음). 읽기 전용 쿼리만 사용하므로 기존 데이터를 건드리지 않는다. bounds 크기 검증은 이 서비스의 책임이 아니다 (Task 3 컨트롤러가 담당) — 테스트에서 임의의 좁은 bounds를 그대로 사용해도 된다.
 
-- [ ] **Step 1: 실패하는 테스트 작성**
+- [x] **Step 1: 실패하는 테스트 작성**
 
 `src/test/java/com/safewalk/safety/SafetyLayerQueryServiceIntegrationTest.java`:
 
@@ -214,12 +214,12 @@ class SafetyLayerQueryServiceIntegrationTest {
 }
 ```
 
-- [ ] **Step 2: 테스트 실패 확인**
+- [x] **Step 2: 테스트 실패 확인**
 
 Run: `./gradlew test --tests "com.safewalk.safety.SafetyLayerQueryServiceIntegrationTest"`
 Expected: FAIL (컴파일 에러 — `SafetyLayerQueryService` 클래스가 없음)
 
-- [ ] **Step 3: 서비스 구현**
+- [x] **Step 3: 서비스 구현**
 
 `src/main/java/com/safewalk/safety/SafetyLayerQueryService.java`:
 
@@ -324,12 +324,12 @@ public class SafetyLayerQueryService {
 }
 ```
 
-- [ ] **Step 4: 테스트 통과 확인**
+- [x] **Step 4: 테스트 통과 확인**
 
 Run: `./gradlew test --tests "com.safewalk.safety.SafetyLayerQueryServiceIntegrationTest"`
 Expected: PASS (실제 Supabase DB에 연결되어 두 테스트 모두 통과)
 
-- [ ] **Step 5: 커밋**
+- [x] **Step 5: 커밋**
 
 ```bash
 git add src/main/java/com/safewalk/safety/SafetyLayerQueryService.java src/test/java/com/safewalk/safety/SafetyLayerQueryServiceIntegrationTest.java
@@ -348,7 +348,7 @@ git commit -m "feat: add SafetyLayerQueryService with bounds queries"
 - Consumes: `SafetyLayerQueryService.getLayers(double, double, double, double, Set<String>): SafetyLayerResponse` (Task 2)
 - Produces: `GET /api/safety/layers?swLat={}&swLng={}&neLat={}&neLng={}&layers={csv}` HTTP 엔드포인트
 
-- [ ] **Step 1: 실패하는 테스트 작성**
+- [x] **Step 1: 실패하는 테스트 작성**
 
 `src/test/java/com/safewalk/safety/SafetyLayerControllerTest.java`:
 
@@ -458,12 +458,12 @@ class SafetyLayerControllerTest {
 }
 ```
 
-- [ ] **Step 2: 테스트 실패 확인**
+- [x] **Step 2: 테스트 실패 확인**
 
 Run: `./gradlew test --tests "com.safewalk.safety.SafetyLayerControllerTest"`
 Expected: FAIL (컴파일 에러 — `SafetyLayerController` 클래스가 없음)
 
-- [ ] **Step 3: 컨트롤러 구현**
+- [x] **Step 3: 컨트롤러 구현**
 
 `src/main/java/com/safewalk/safety/SafetyLayerController.java`:
 
@@ -548,12 +548,12 @@ public class SafetyLayerController {
 }
 ```
 
-- [ ] **Step 4: 테스트 통과 확인**
+- [x] **Step 4: 테스트 통과 확인**
 
 Run: `./gradlew test --tests "com.safewalk.safety.SafetyLayerControllerTest"`
 Expected: PASS
 
-- [ ] **Step 5: 커밋**
+- [x] **Step 5: 커밋**
 
 ```bash
 git add src/main/java/com/safewalk/safety/SafetyLayerController.java src/test/java/com/safewalk/safety/SafetyLayerControllerTest.java
@@ -569,12 +569,13 @@ git commit -m "feat: add GET /api/safety/layers endpoint"
 **Interfaces:**
 - Consumes: `GET /api/safety/layers?swLat={}&swLng={}&neLat={}&neLng={}&layers={csv}` (Task 3)
 
-- [ ] **Step 1: 애플리케이션 기동**
+- [x] **Step 1: 애플리케이션 기동**
 
 Run: `./gradlew bootRun` (백그라운드 실행)
 Expected: 로그에 `Started SafewalkApplication` 출력
+실측: `Started SafewalkApplication in 0.929 seconds` 로그 확인, Tomcat 8080 포트로 기동됨
 
-- [ ] **Step 2: 실제 CCTV 좌표 주변 bounds로 단일 레이어 조회**
+- [x] **Step 2: 실제 CCTV 좌표 주변 bounds로 단일 레이어 조회**
 
 Run:
 ```bash
@@ -585,27 +586,33 @@ curl -s "http://localhost:8080/api/safety/summary?lat=37.5665&lng=126.9780"
 curl -s "http://localhost:8080/api/safety/layers?swLat=37.560&swLng=126.973&neLat=37.573&neLng=126.983&layers=cctv"
 ```
 Expected: HTTP 200, `{"cctv":[...]}` 형태이고 `securityLight`/`safetyBell`/`crimeZone` 키는 없음
+실측: 200 OK, `{"cctv":[{"id":50,"lat":37.57157,"lng":126.9798,"address":"서울특별시 종로구 인의동 123","cameraCount":3}, ...]}` — cctv 다건 반환, 다른 레이어 키 없음 확인
 
-- [ ] **Step 3: 복수 레이어 조회**
+- [x] **Step 3: 복수 레이어 조회**
 
 Run: `curl -s "http://localhost:8080/api/safety/layers?swLat=37.560&swLng=126.973&neLat=37.573&neLng=126.983&layers=cctv,safetyBell"`
 Expected: HTTP 200, `cctv`와 `safetyBell` 키만 존재
+실측: 200 OK, `cctv`/`safetyBell` 키만 존재하고 `securityLight`/`crimeZone` 키 없음 확인
 
-- [ ] **Step 4: bounds 크기 초과로 400 확인**
+- [x] **Step 4: bounds 크기 초과로 400 확인**
 
 Run: `curl -s -o /dev/null -w "%{http_code}" "http://localhost:8080/api/safety/layers?swLat=37.0&swLng=126.0&neLat=38.0&neLng=127.0&layers=cctv"`
 Expected: `400`
+실측: `400`
 
-- [ ] **Step 5: layers 파라미터 누락으로 400 확인**
+- [x] **Step 5: layers 파라미터 누락으로 400 확인**
 
 Run: `curl -s -o /dev/null -w "%{http_code}" "http://localhost:8080/api/safety/layers?swLat=37.560&swLng=126.973&neLat=37.573&neLng=126.983"`
 Expected: `400`
+실측: `400`
 
-- [ ] **Step 6: 잘못된 박스(역전)로 400 확인**
+- [x] **Step 6: 잘못된 박스(역전)로 400 확인**
 
 Run: `curl -s -o /dev/null -w "%{http_code}" "http://localhost:8080/api/safety/layers?swLat=37.573&swLng=126.973&neLat=37.560&neLng=126.983&layers=cctv"`
 Expected: `400`
+실측: `400`
 
-- [ ] **Step 7: 애플리케이션 종료**
+- [x] **Step 7: 애플리케이션 종료**
 
 `bootRun` 프로세스 종료 (`netstat -ano`로 8080 포트 PID 확인 후 `taskkill //F //PID <pid>`)
+실측: PID 14104 종료, 8080 포트 해제 확인
