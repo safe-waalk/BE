@@ -47,17 +47,106 @@ docker compose up --build
 
 ## API
 
-| Method | Endpoint | 설명 |
-|---|---|---|
-| GET | `/api/safety/summary?lat={}&lng={}` | 좌표 기준 반경 내 CCTV/보안등/안심벨/범죄주의구역 집계(개수, 최근접거리) |
-| GET | `/api/safety/layers?swLat={}&swLng={}&neLat={}&neLng={}&layers={csv}` | 지도 bounds(남서/북동) 안의 CCTV/보안등/안심벨/범죄주의구역 개별 좌표 조회 |
-| GET | `/api/safety/score?lat={}&lng={}` | 좌표 기준 안전점수(0~100)와 세부 내역(범죄 감점, CCTV/보안등 가점) |
-| POST | `/api/reports` | 사용자 신고 등록 |
-| GET | `/api/reports?swLat={}&swLng={}&neLat={}&neLng={}` | bounds 안의 신고 목록 조회 |
-| GET | `/api/health/db` | DB 연결 상태 확인 |
-| GET | `/api/health/db/counts` | 테이블별 row 카운트 확인 |
+FE를 포함한 외부 소비자를 위한 API 계약은 이 문서를 기준으로 한다 (스펙 원본은 `docs/superpowers/specs/`, 최신 계약은 이 표가 우선).
 
-각 엔드포인트의 정확한 요청/응답 계약은 `docs/superpowers/specs/`의 해당 설계 문서를 참고.
+### 구현 상태 (2026-07-19 기준)
+
+| Method | Endpoint | 설명 | 상태 |
+|---|---|---|---|
+| GET | `/api/safety/summary` | 좌표 기준 반경 내 안전 인프라 집계 | `main` |
+| GET | `/api/safety/layers` | 지도 bounds 안의 개별 좌표 조회 | `main` |
+| GET | `/api/safety/score` | 좌표 기준 안전점수(0~100) | `main` |
+| POST/GET | `/api/reports` | 신고 등록/조회 | `TW` 브랜치 구현 완료, **`main` 미병합** |
+| GET | `/api/health/db`, `/api/health/db/counts` | 헬스체크 | `main` |
+
+### CORS ⚠️
+
+BE에 CORS 설정이 없다. 로컬 프론트 개발은 Vite dev proxy 등으로 우회한다 (`/api` → `http://localhost:8080`). 배포 시 같은 도메인에서 서빙하거나 CORS 추가가 필요해지면 그때 논의.
+
+### 에러 응답 공통
+
+- 400: `ResponseStatusException` 기반 Spring 기본 포맷 (`{"timestamp","status","error","path",...}`). 별도 에러 코드 체계 없음
+- 500: DB 오류 등 — 별도 핸들링 없이 Spring 기본 응답
+
+---
+
+### `GET /api/safety/summary?lat={}&lng={}`
+
+좌표 1개 기준 타입별 고정 반경 내 집계.
+
+- `lat`(-90~90), `lng`(-180~180) 필수, 범위 밖/누락 시 400
+- 반경 고정: cctv/crimeZone 150m, securityLight/safetyBell 100m
+
+```json
+{
+  "cctv":          { "count": 12, "nearestDistance": 45.2 },
+  "securityLight": { "count": 8,  "nearestDistance": 20.1 },
+  "safetyBell":    { "count": 1,  "nearestDistance": 180.4 },
+  "crimeZone":     { "count": 2,  "nearestDistance": 60.0, "maxGrade": 7 }
+}
+```
+
+`nearestDistance`는 미터, 반경 내 데이터 없으면 `null` (count는 0).
+
+### `GET /api/safety/layers?swLat={}&swLng={}&neLat={}&neLng={}&layers={csv}`
+
+지도 bounds(남서/북동) 안의 안전 인프라 개별 좌표를 레이어별로 반환.
+
+- `swLat/swLng`/`neLat/neLng` 필수 — 카카오맵 `bounds.getSouthWest()`/`getNorthEast()`와 1:1로 대응
+- `layers`: `cctv`, `securityLight`, `safetyBell`, `crimeZone` 중 1개 이상 콤마 구분. 누락/빈 값/오타 → 400
+- **레이어당 최대 500건** — 초과분은 잘리며 응답에 표시 없음 (클라이언트가 줌인 유도로 대응)
+- **bounds 한 변이 5km 초과 시 400** — 위도 1도 ≈ 111,320m, 경도는 평균 위도 코사인 보정
+- 응답은 **요청한 레이어 키만 포함** (요청 안 한 레이어는 키 자체가 없음)
+
+```json
+{
+  "cctv":      [{ "id": 1, "lat": 37.5665, "lng": 126.978, "address": "...", "cameraCount": 2 }],
+  "crimeZone": [{ "id": 3, "lat": 37.555,  "lng": 126.97,  "grade": 7 }]
+}
+```
+
+`crimeZone.grade`는 0~10.
+
+### `GET /api/safety/score?lat={}&lng={}`
+
+좌표 기준 안전점수. 기존 `summary` 데이터를 재사용해 계산하며 새 DB 쿼리는 추가하지 않는다.
+
+- `lat`/`lng` 필수, 범위 밖/누락 시 400
+- 산식: `score = round(clamp(70 - crimePenalty + cctvBonus + lightBonus, 0, 100))` — 상세 상수는 `docs/superpowers/specs/2026-07-19-safety-score-design.md` 참고
+- `report_penalty`/`night_time_penalty`는 아직 반영 안 함 (신고 채택 플로우·시간대 유의미성 부재로 제외)
+
+```json
+{"score": 62, "crimePenalty": 17.5, "cctvBonus": 20.0, "lightBonus": 10.0}
+```
+
+`crimePenalty`/`cctvBonus`/`lightBonus`는 반올림하지 않은 소수 (디버깅/투명성 목적).
+
+### `POST` / `GET /api/reports` — ⚠️ `TW` 브랜치, `main` 미병합
+
+병합 전까지 계약이 바뀔 수 있음. 현재 `TW` 브랜치 기준:
+
+```
+POST /api/reports
+{"content": "...", "lat": 37.5665, "lng": 126.9780, "category": "LIGHTING", "severity": "MID"}
+→ 201, ReportResponse 반환
+
+GET /api/reports
+→ 200, 전체 신고 목록 배열 반환 (bounds 필터 없음)
+```
+
+- `content`, `lat`, `lng` 필수. `category`/`severity`는 선택이며, 값이 있을 때만 화이트리스트 검증
+  - `category`: `LIGHTING`/`CCTV`/`SUSPICIOUS_AREA`/`ROAD_ENVIRONMENT`/`CRIME_RISK`/`NOISE_GROUP`/`WOMEN_SAFETY`/`FALSE_REPORT`/`PRIVACY_RISK`/`ETC`
+  - `severity`: `HIGH`/`MEDIUM`/`LOW`
+- `status`는 서버가 항상 `PENDING`으로 저장, 관리자 검토 기능은 아직 없음
+- `GET`은 bounds 파라미터가 없다 — 전체 목록을 반환 (지도 bounds 조회가 필요해지면 별도 논의)
+
+```json
+{"id": 1, "content": "...", "category": "LIGHTING", "severity": "MID", "status": "PENDING", "lat": 37.5665, "lng": 126.9780, "createdAt": "2026-07-19T18:50:00"}
+```
+
+### `GET /api/health/db`, `GET /api/health/db/counts`
+
+DB 연결/테이블별 row 수 확인용. 외부 소비자는 BE 연결 확인 용도로만 사용.
 
 ## DB 스키마
 
