@@ -9,6 +9,13 @@ SET statement_timeout = 0;
 ALTER TABLE ways ADD COLUMN IF NOT EXISTS safety_score SMALLINT;
 ALTER TABLE ways ADD COLUMN IF NOT EXISTS safety_cost  DOUBLE PRECISION;
 
+-- ST_DWithin(geom::geography, ...) 은 geometry GiST 인덱스를 우회하므로 geography 전용 인덱스 필요
+-- 없으면 419k edges 처리에 수십 시간 소요됨
+CREATE INDEX IF NOT EXISTS idx_crime_zone_geom_geo   ON crime_zone     USING GIST ((geom::geography));
+CREATE INDEX IF NOT EXISTS idx_cctv_geom_geo         ON cctv           USING GIST ((geom::geography));
+CREATE INDEX IF NOT EXISTS idx_light_geom_geo        ON security_light USING GIST ((geom::geography));
+CREATE INDEX IF NOT EXISTS idx_bell_geom_geo         ON safety_bell    USING GIST ((geom::geography));
+
 UPDATE ways w
 SET
     safety_score = scores.score,
