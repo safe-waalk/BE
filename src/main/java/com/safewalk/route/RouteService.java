@@ -2,6 +2,7 @@ package com.safewalk.route;
 
 import com.safewalk.route.dto.Coordinate;
 import com.safewalk.route.dto.RouteResponse;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -16,6 +17,11 @@ import java.util.Map;
 public class RouteService {
 
     private static final double MAX_SNAP_DISTANCE_M = 1000.0;
+
+    private static final String INNER_SQL_SAFE =
+            "SELECT gid AS id, source, target, COALESCE(safety_cost, cost) AS cost, COALESCE(safety_cost, cost) AS reverse_cost FROM ways";
+    private static final String INNER_SQL_SHORTEST =
+            "SELECT gid AS id, source, target, cost, reverse_cost FROM ways";
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
@@ -32,9 +38,7 @@ public class RouteService {
         long targetId = findNearestNode(endLat, endLng);
 
         // mode는 컨트롤러에서 이미 SAFE/SHORTEST로 검증됨
-        String innerSql = mode.equals("SAFE")
-                ? "SELECT gid AS id, source, target, COALESCE(safety_cost, cost) AS cost, COALESCE(safety_cost, cost) AS reverse_cost FROM ways"
-                : "SELECT gid AS id, source, target, cost, reverse_cost FROM ways";
+        String innerSql = mode.equals("SAFE") ? INNER_SQL_SAFE : INNER_SQL_SHORTEST;
 
         // ST_Length(the_geom::geography) — 실제 미터 단위 거리 (cost 컬럼 단위에 무관)
         String dijkstraSql = """
@@ -98,7 +102,12 @@ public class RouteService {
                 .addValue("lat", lat)
                 .addValue("lng", lng);
 
-        Map<String, Object> row = jdbcTemplate.queryForMap(sql, params);
+        Map<String, Object> row;
+        try {
+            row = jdbcTemplate.queryForMap(sql, params);
+        } catch (EmptyResultDataAccessException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "경로 탐색 가능 구역이 아닙니다");
+        }
         double distM = ((Number) row.get("dist_m")).doubleValue();
 
         if (distM > MAX_SNAP_DISTANCE_M) {
