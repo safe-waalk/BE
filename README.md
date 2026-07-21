@@ -150,6 +150,34 @@ DB 연결/테이블별 row 수 확인용. 외부 소비자는 BE 연결 확인 �
 
 `db/schema.sql` 참고. 주요 테이블: `crime_zone`, `cctv`, `security_light`, `safety_bell`, `report`. 모든 위치 데이터는 `geom GEOMETRY(Point, 4326)` 컬럼에 저장되며, 반경/bounds 검색을 위해 `GIST` 공간 인덱스가 걸려 있다.
 
+## 도보망(pgRouting) 데이터
+
+서울 도보 최단경로 계산(`pgr_dijkstra`)을 위한 도로망 그래프(`ways`, `ways_vertices_pgr` 테이블)는 OSM(OpenStreetMap) 데이터를 가공해 Supabase에 적재해뒀다. **이미 공용 Supabase DB에 들어가 있으므로, 조회만 할 거면 아래 재적재 과정은 필요 없다** — `.env`에 같은 Supabase 접속 정보만 있으면 바로 `pgr_dijkstra` 쿼리를 쓸 수 있다.
+
+### 재적재가 필요한 경우 (스키마 변경, 다른 지역 확장 등)
+
+사전 준비: Docker Desktop, `.env`(Supabase 접속 정보).
+
+```bash
+cd BE/db
+
+# 1. pgRouting 확장 활성화 (최초 1회)
+psql "host=$SUPABASE_DB_HOST port=$SUPABASE_DB_PORT dbname=$SUPABASE_DB_NAME user=$SUPABASE_DB_USER sslmode=require" -f pgrouting-extension.sql
+
+# 2. 전국 OSM → 서울 bbox로 클리핑 (osm-data/seoul.osm.pbf 생성)
+./download-seoul-osm.sh
+
+# 3. PBF → XML 변환 후 Supabase에 적재 (osm-data/, ways/ways_vertices_pgr 테이블)
+./load-osm-walk-network.sh
+
+# 4. 동작 검증 (서울시청 인근 두 지점 최단경로)
+psql "host=$SUPABASE_DB_HOST port=$SUPABASE_DB_PORT dbname=$SUPABASE_DB_NAME user=$SUPABASE_DB_USER sslmode=require" -f verify-walk-network.sql
+```
+
+- 2, 3단계는 `iboates/osmium`, `iboates/osm2pgrouting` **공개 Docker 이미지**를 그때그때 pull해서 실행한다(`docker run --rm`) — 우리가 별도로 빌드/push하는 이미지는 없다. Docker Desktop만 설치돼 있으면 누구나 동일하게 재현 가능.
+- `osm-data/`(원본·중간 OSM 파일, 수백MB)는 `.gitignore`에 걸려 있어 저장소에는 없다. 2단계 스크립트가 geofabrik에서 다시 받아오므로 별도 공유 불필요(다운로드+클리핑에 다소 시간 소요).
+- 트러블슈팅 이력(Windows Git Bash 경로 변환 이슈, `osm2pgrouting` 청크 사이즈 등)은 `load-osm-walk-network.sh` 내 주석 참고.
+
 ## 프로젝트 구성
 
 ```
