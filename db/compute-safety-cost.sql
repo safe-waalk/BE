@@ -1,7 +1,14 @@
 -- Safety cost 배치 계산 스크립트
 -- load-osm-walk-network.sh 실행 후 1회 수동 실행:
 --   psql "$SUPABASE_DB_URL" -f BE/db/compute-safety-cost.sql
--- 419k edges 처리로 수 분 소요 예상
+--
+-- ⚠️  중요: 안정적인 장기 연결 필수 (PgBouncer 같은 커넥션 풀러 사용 불가)
+--    UPDATE는 419k rows의 단일 트랜잭션으로 실행되며, 연결 중단 시 전체 롤백됨
+--
+-- 예상 실행 시간:
+--   - geography 인덱스 포함: 15~30분
+--   - geography 인덱스 없음: ~37시간
+-- 419k edges 처리로 15~30분 소요 예상 (geography 인덱스 생성 포함)
 
 -- 장시간 실행 허용 (배치 작업)
 SET statement_timeout = 0;
@@ -95,3 +102,7 @@ FROM (
     WHERE w2.the_geom IS NOT NULL
 ) scores
 WHERE w.gid = scores.gid;
+
+-- Verification: Check if any ways were skipped due to missing geometry
+-- If still_null > 0, some ways had no geometry and were skipped — verify this is acceptable
+SELECT COUNT(*) FILTER (WHERE safety_score IS NULL) AS still_null FROM ways;
