@@ -32,8 +32,8 @@ public class RouteController {
         if (startLng < -180 || startLng > 180 || endLng < -180 || endLng > 180) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "경도는 -180~180 사이여야 합니다");
         }
-        if (!mode.equals("SAFE") && !mode.equals("SHORTEST")) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "mode는 SAFE 또는 SHORTEST여야 합니다");
+        if (!RouteMode.isSupported(mode)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "mode는 SAFE, SHORTEST, HEAT, RAIN 중 하나여야 합니다");
         }
 
         return routeService.findRoute(startLat, startLng, endLat, endLng, mode);
