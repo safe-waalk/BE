@@ -37,6 +37,19 @@ docker compose up --build
 
 기본 포트는 `8080`.
 
+#### 로컬 Docker DB로 실행 (`local` 프로필)
+
+Supabase 대신 로컬 PostGIS + pgRouting 컨테이너(`docker-compose.local.yml`, `localhost:5433`)를 쓴다.
+기후 경로(HEAT/RAIN)와 `/api/climate/*`는 현재 **로컬 DB에만 적재돼 있다**.
+
+```bash
+docker compose -f docker-compose.local.yml up -d   # DB 컨테이너(최초 1회)
+./db/climate/load.sh                                # 보행 그래프 + 기후 데이터 적재 (몇 번 돌려도 같은 결과)
+./gradlew bootRun --args='--spring.profiles.active=local'
+```
+
+적재 데이터·절차·근사 항목은 `db/climate/README.md` 참고. 원천 데이터가 없으면 `./db/climate/fetch-data.sh`로 먼저 받는다.
+
 ### 3. 테스트
 
 ```bash
@@ -45,11 +58,18 @@ docker compose up --build
 
 일부 테스트(`*IntegrationTest`)는 실제 Supabase DB에 연결한다 — `.env` 설정이 필요하다.
 
+기후 경로 통합 테스트(`RouteServiceClimateIntegrationTest`, `ClimateLayerQueryServiceIntegrationTest`)는
+로컬 적재 DB가 필요해서 `SPRING_PROFILES_ACTIVE=local`일 때만 돈다(그 외에는 skip).
+
+```bash
+SPRING_PROFILES_ACTIVE=local ./gradlew test --tests '*Climate*'
+```
+
 ## API
 
 FE를 포함한 외부 소비자를 위한 API 계약은 이 문서를 기준으로 한다 (스펙 원본은 `docs/superpowers/specs/`, 최신 계약은 이 표가 우선).
 
-### 구현 상태 (2026-07-19 기준)
+### 구현 상태 (2026-11-10 기준)
 
 | Method | Endpoint | 설명 | 상태 |
 |---|---|---|---|
@@ -57,6 +77,10 @@ FE를 포함한 외부 소비자를 위한 API 계약은 이 문서를 기준으
 | GET | `/api/safety/layers` | 지도 bounds 안의 개별 좌표 조회 | `main` |
 | GET | `/api/safety/score` | 좌표 기준 안전점수(0~100) | `main` |
 | POST/GET | `/api/reports` | 신고 등록/조회 | `main` |
+| GET | `/api/route` | 도보 경로 탐색 (`SAFE`/`SHORTEST`/`HEAT`/`RAIN`) | `main` (HEAT/RAIN은 이 브랜치) |
+| GET | `/api/climate/shelters` | 지도 bounds 안 무더위쉼터 | 이 브랜치 |
+| GET | `/api/climate/flood-zones` | 지도 bounds와 겹치는 침수흔적 폴리곤 | 이 브랜치 |
+| GET | `/api/climate/alert` | 폭염/호우 경보 문구 (**시뮬레이션**) | 이 브랜치 |
 | GET | `/api/health/db`, `/api/health/db/counts` | 헬스체크 | `main` |
 
 ### CORS ⚠️
@@ -121,6 +145,64 @@ BE에 CORS 설정이 없다. 로컬 프론트 개발은 Vite dev proxy 등으로
 
 `crimePenalty`/`cctvBonus`/`lightBonus`는 반올림하지 않은 소수 (디버깅/투명성 목적).
 
+### `GET /api/route?startLat={}&startLng={}&endLat={}&endLng={}&mode={}`
+
+두 지점 사이 도보 경로(`pgr_dijkstra`, 무방향). 각 좌표는 가장 가까운 그래프 꼭짓점으로 스냅한다.
+
+- `mode`(대소문자 구분): `SAFE` → `COALESCE(safety_cost, cost)`, `SHORTEST` → `cost`, `HEAT` → `heat_cost`, `RAIN` → `rain_cost`. 그 외 400
+- 스냅 거리가 1000m를 넘으면(그래프 범위 밖) 404, 두 꼭짓점이 연결되어 있지 않으면 404
+- `coordinates`는 지나가는 간선의 **실제 형상점**을 출발 → 도착 순서로 담는다(이음새 중복 제거)
+- `exposure`는 **모든 모드**에서 채운다 — 같은 구간의 모드끼리 비교하기 위함
+  - `shadeRatio`: 길이 가중 평균 그늘 비율(0~1)
+  - `floodZoneMeters`: **침수흔적 10m 이내**를 지나는 구간 길이
+  - `underpassMeters`: 지하보도·지하차도 구간 길이
+- `shelters`: `HEAT`에서만, 경로 150m 이내 무더위쉼터를 가까운 순으로 최대 20개. 다른 모드는 `[]`
+- `refuge`: `RAIN`에서 출발지나 도착지가 침수흔적 폴리곤 안일 때만. 반경 1000m 안에서 침수흔적 밖이고
+  주변(반경 100m 꼭짓점 평균) 고도보다 3m 이상 높은 가장 가까운 꼭짓점. 없으면 키 자체가 생략된다
+- 현재 안전 데이터(`safety_cost`)가 로컬 DB에 없어 `SAFE`는 `SHORTEST`와 같은 경로를 내고 `estimatedSafetyScore`는 기본값 70이다
+
+```json
+{
+  "coordinates": [{"lat": 37.5883947, "lng": 127.0061709}],
+  "totalDistanceMeters": 908.1,
+  "estimatedSafetyScore": 70,
+  "exposure": {"shadeRatio": 0.232, "floodZoneMeters": 172.9, "underpassMeters": 0.0},
+  "shelters": [{"id": 1, "name": "...", "lat": 37.58, "lng": 127.00, "distanceFromRouteM": 23.4}],
+  "refuge": {"lat": 37.5783, "lng": 127.0082, "elevationM": 92.23, "distanceM": 35.3}
+}
+```
+
+### `GET /api/climate/shelters?swLat={}&swLng={}&neLat={}&neLng={}`
+
+bounds 안 무더위쉼터. 검증 규칙은 `/api/safety/layers`와 같다(좌표 범위, sw < ne, 한 변 5km 이하). 최대 500건.
+
+```json
+{"shelters": [{"id": 1, "lat": 37.583189, "lng": 127.005093, "name": "동숭경로당", "facilityType": "회원이용시설",
+               "address": "서울특별시 종로구 동숭4나길 17", "openTime": "09:00", "closeTime": "18:00"}]}
+```
+
+### `GET /api/climate/flood-zones?swLat={}&swLng={}&neLat={}&neLng={}`
+
+bounds와 겹치는 침수흔적(2010~2025 서울시 침수흔적도). 검증 규칙은 `shelters`와 같다. 최대 300건.
+
+- `polygons[폴리곤][링][점] = {lat, lng}` — 링 0은 외곽선, 1부터는 구멍. 모든 링은 닫혀 있다(첫 점 == 마지막 점)
+- bounds로 잘라(`ST_Intersection`) 약 2m 허용오차로 단순화(`ST_SimplifyPreserveTopology`)해서 내려준다
+
+```json
+{"floodZones": [{"id": 1, "year": 2010, "polygons": [[[{"lat": 37.58678, "lng": 127.00893}, "..."]]]}]}
+```
+
+### `GET /api/climate/alert?scenario={NONE|HEAT|RAIN}`
+
+경보 문구와 추천 경로 모드. **기상청 특보 API 연동이 없어 시나리오 시뮬레이션이며 응답에 항상 `simulated: true`가 붙는다.**
+DB를 읽지 않는다. 대소문자가 다르거나 없는 값은 400. `recommendedMode`: `NONE`→`SHORTEST`, `HEAT`→`HEAT`, `RAIN`→`RAIN`.
+
+```json
+{"type": "HEAT", "title": "폭염 특보 · 그늘길로 안내해요",
+ "message": "폭염 특보가 내려졌어요. 그늘이 많은 길과 무더위쉼터를 지나는 경로로 안내할게요. ...",
+ "recommendedMode": "HEAT", "simulated": true}
+```
+
 ### `POST` / `GET /api/reports`
 
 ```
@@ -151,6 +233,9 @@ DB 연결/테이블별 row 수 확인용. 외부 소비자는 BE 연결 확인 �
 `db/schema.sql` 참고. 주요 테이블: `crime_zone`, `cctv`, `security_light`, `safety_bell`, `report`. 모든 위치 데이터는 `geom GEOMETRY(Point, 4326)` 컬럼에 저장되며, 반경/bounds 검색을 위해 `GIST` 공간 인덱스가 걸려 있다.
 
 ## 도보망(pgRouting) 데이터
+
+> 기후 경로용 로컬 그래프(한성대입구역 일대, `tunnel`/`covered`/그늘/침수/고도 포함)는 아래 Supabase 적재와 별개로
+> `db/climate/load.sh`가 직접 만든다. 상세는 `db/climate/README.md`.
 
 서울 도보 최단경로 계산(`pgr_dijkstra`)을 위한 도로망 그래프(`ways`, `ways_vertices_pgr` 테이블)는 OSM(OpenStreetMap) 데이터를 가공해 Supabase에 적재해뒀다. **이미 공용 Supabase DB에 들어가 있으므로, 조회만 할 거면 아래 재적재 과정은 필요 없다** — `.env`에 같은 Supabase 접속 정보만 있으면 바로 `pgr_dijkstra` 쿼리를 쓸 수 있다.
 
@@ -185,7 +270,11 @@ src/main/java/com/safewalk/
 ├─ HealthController.java
 ├─ safety/       — 안전 인프라 조회 (summary/layers/score)
 │  └─ dto/
-└─ report/       — 사용자 신고 등록/조회
+├─ report/       — 사용자 신고 등록/조회
+│  └─ dto/
+├─ route/        — 도보 경로 탐색 (SAFE/SHORTEST/HEAT/RAIN)
+│  └─ dto/
+└─ climate/      — 무더위쉼터·침수흔적 레이어, 경보 시뮬레이션
    └─ dto/
 ```
 
