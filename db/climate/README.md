@@ -80,7 +80,8 @@ osm2pgrouting은 `tunnel`·`covered` 태그를 버리므로 쓰지 않고 OSM XM
 - **`length_m`**: 형상점 사이 haversine 거리의 합(지구 반지름 6,371,008.8m). 0.01m보다 짧으면 0.01m로 둔다
   (같은 좌표에 다른 node가 겹친 경우). `cost = reverse_cost = length_m`.
   `verify.sql`이 `ST_Length(the_geom::geography)`(타원체)와의 차이를 출력한다.
-- **`underpass`**: `tunnel`이 `no`가 아닌 값(yes, building_passage, covered 등)이거나 `layer`가 음수면 지하로 본다.
+- **`underpass`**: `tunnel`이 `no`·`building_passage`가 아닌 값(yes, covered 등)이거나 `layer`가 음수면 지하로 본다.
+  `building_passage`는 건물 1층을 관통하는 지상 통로라 지하로 보지 않고 `covered`로만 처리한다.
   그중 `highway`가 footway/path/pedestrian/steps/cycleway면 `PEDESTRIAN`(지하보도), 나머지는 `ROAD`(지하차도),
   지하가 아니면 `NONE`. cycleway는 국내에서 대부분 보행자 겸용이라 보행 쪽에 넣었다.
 - **`covered`**: `covered`가 `no`가 아닌 값이거나 `tunnel=building_passage`.
@@ -172,7 +173,7 @@ rain_cost = length_m * (in_flood_zone ? 8 : 1) * (underpass <> 'NONE' ? 30 : 1)
 - 그늘: 위 "한계" 그대로. 태양 위치·시각을 반영하지 않는 고정 버퍼 근사이고, 건물 높이 대부분이 기본값이다.
 - 침수: 과거 침수 **흔적**(2010~2025, 2015·2021 없음)을 모두 합친 것이다. 실시간 강우·배수 용량이나 침수 깊이는 반영하지 않는다.
 - 지하차도/지하보도: OSM `tunnel`·`layer` 태그에 의존한다. 태그가 빠진 지하 통로는 `NONE`으로 나온다.
-  `tunnel=building_passage`(건물 1층을 관통하는 통로)도 규칙대로 지하로 분류되어 `rain_cost`에 x30이 붙는다.
-  실제로는 비를 피할 수 있는 길이라 호우 모드에서 과하게 피하게 된다(이 범위 안에서는 9개 간선).
+  `tunnel=building_passage`(건물 1층 관통 통로, 이 범위 9개 간선)는 처음에 지하로 분류해 `rain_cost`에 x30이 붙었으나,
+  비를 피할 수 있는 지상 통로라 2026-11-16에 지하 분류에서 뺐다(`covered=true`라 그늘 1.0은 유지).
 - 고도: SRTM 30m 격자 보간이다(건물·고가 구조물 높이가 섞인 DSM 성격).
 - 경보 자체(폭염/호우 특보)는 이 스크립트 범위 밖이다. BE의 `/api/climate/alert`가 시나리오로 시뮬레이션한다.

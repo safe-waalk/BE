@@ -136,8 +136,9 @@ def parse_layer(tags):
 
 
 def classify_underpass(tags):
+    # building_passage는 건물 1층을 관통하는 지상 통로라 지하로 보지 않는다(covered로만 처리).
     tunnel = tags.get("tunnel")
-    underground = (tunnel is not None and tunnel != "no") or parse_layer(tags) < 0
+    underground = (tunnel not in (None, "no", "building_passage")) or parse_layer(tags) < 0
     if not underground:
         return "NONE"
     return "PEDESTRIAN" if tags.get("highway") in PEDESTRIAN_HIGHWAY else "ROAD"
