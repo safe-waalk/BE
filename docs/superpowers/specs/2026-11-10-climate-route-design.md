@@ -34,7 +34,7 @@
 
 ### 간선 속성
 
-- `underpass`: `tunnel`이 `no`가 아니거나 `layer < 0`이면 지하. 보행류 highway면 `PEDESTRIAN`, 차도류면 `ROAD`, 아니면 `NONE`
+- `underpass`: `tunnel`이 `no`·`building_passage`가 아니거나 `layer < 0`이면 지하. 보행류 highway면 `PEDESTRIAN`, 차도류면 `ROAD`, 아니면 `NONE`
 - `covered`: `covered`가 `no`가 아님 또는 `tunnel=building_passage`
 - `shade_ratio`: EPSG:5186에서 `|간선 ∩ 그늘 면 합집합| / |간선|`
   - 건물: 바닥 + 버퍼 `min(높이 × 0.5, 15m)`, 높이는 `height` → `building:levels × 3.2` → 9m
@@ -88,8 +88,9 @@ rain_cost = length_m * (in_flood_zone ? 8 : 1) * (underpass <> 'NONE' ? 30 : 1)
 ### `refuge`
 
 RAIN에서 출발지(없으면 도착지)가 `flood_trace` 안일 때만. 반경 1000m 꼭짓점 중
-(a) 어떤 `flood_trace`에도 안 들어 있고 (b) 고도 ≥ 주변(반경 100m 꼭짓점 평균) + 3m 인 것 가운데 가장 가까운 것.
-없으면 `null`. 도달 가능성(같은 연결 컴포넌트인지)은 따지지 않는다.
+(a) 어떤 `flood_trace`에도 안 들어 있고 (b) 고도 ≥ 주변(반경 100m 꼭짓점 평균) + 3m 이고
+(c) 기준 지점이 스냅된 꼭짓점과 같은 연결 컴포넌트(`pgr_connectedComponents`)인 것 가운데 가장 가까운 것.
+없으면 `null`.
 
 ---
 
@@ -123,7 +124,9 @@ RAIN에서 출발지(없으면 도착지)가 `flood_trace` 안일 때만. 반경
 알려진 문제:
 
 - 시연 최단경로 31간선 중 17간선(삼선교로4길 일대)은 주변 20m 안에 OSM 건물이 없어 그늘 0 — **데이터 공백**이지 실제 그늘이 없는 게 아니다
-- `tunnel=building_passage`(9간선)도 지하로 분류돼 RAIN에서 ×30. 실제로는 비를 피할 수 있는 길이라 과하게 회피한다
+- (2026-11-16 해결) `tunnel=building_passage`(9간선)가 지하로 분류돼 RAIN에서 ×30을 받던 문제 — 지하 분류에서 빼고 `covered`로만 둔다.
+  지하 간선이 39개에서 30개로 줄었고 시연 구간 세 경로는 변하지 않았다
+- (2026-11-16 해결) `refuge`가 걸어서 갈 수 없는 꼭짓점일 수 있던 문제 — 같은 연결 컴포넌트 조건 추가, 통합 테스트로 대피 지점까지 경로 존재 확인
 - 시연 구간 출발·도착이 침수흔적 밖이라 시연 경로로는 `refuge`가 나오지 않는다
 - 기존 SAFE/SHORTEST 통합 테스트는 시청 좌표를 써서 로컬 적재 범위 밖(404)이다
 - 침수 폴리곤 위치를 현장 자료와 대조하지 않았다(`.prj` 좌표계만 확인)

@@ -146,6 +146,10 @@ class RouteServiceClimateIntegrationTest {
             assertThat(refuge.distanceM()).isBetween(0.0, 1000.0);
             assertThat(baseElevation).isNotNull();
             assertThat(refuge.elevationM()).isGreaterThanOrEqualTo(baseElevation + 3.0);
+
+            // 대피 지점까지 실제로 걸어갈 수 있어야 한다
+            RouteResponse toRefuge = routeService.findRoute(lat, lng, refuge.lat(), refuge.lng(), "SHORTEST");
+            assertThat(toRefuge.coordinates()).isNotEmpty();
         }
         assumeThat(refugesFound).as("후보 출발지 모두 조건을 만족하는 대피 지점이 없음").isPositive();
     }

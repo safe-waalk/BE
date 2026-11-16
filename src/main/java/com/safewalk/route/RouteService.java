@@ -54,7 +54,7 @@ public class RouteService {
                 ? findSheltersAlongRoute(edges.stream().map(RouteEdge::edgeId).toList())
                 : List.of();
         RefugePoint refuge = routeMode == RouteMode.RAIN
-                ? findRefuge(startLat, startLng, endLat, endLng)
+                ? findRefuge(startLat, startLng, sourceId, endLat, endLng, targetId)
                 : null;
 
         return new RouteResponse(
@@ -165,12 +165,13 @@ public class RouteService {
      * 출발지가 침수 흔적 구역 안이면 출발지 기준, 아니고 도착지가 구역 안이면 도착지 기준으로 대피 지점을 찾는다.
      * 둘 다 구역 밖이면 null.
      */
-    private RefugePoint findRefuge(double startLat, double startLng, double endLat, double endLng) {
+    private RefugePoint findRefuge(double startLat, double startLng, long sourceId,
+                                   double endLat, double endLng, long targetId) {
         if (isInFloodZone(startLat, startLng)) {
-            return findRefugeNear(startLat, startLng);
+            return findRefugeNear(startLat, startLng, sourceId);
         }
         if (isInFloodZone(endLat, endLng)) {
-            return findRefugeNear(endLat, endLng);
+            return findRefugeNear(endLat, endLng, targetId);
         }
         return null;
     }
@@ -195,10 +196,19 @@ public class RouteService {
      * (a) 어떤 침수 흔적 폴리곤에도 들지 않고
      * (b) 기준 지점 주변 고도(반경 REFUGE_BASE_RADIUS_M 안 꼭짓점 고도 평균)보다 REFUGE_MIN_RISE_M 이상 높은
      * 가장 가까운 꼭짓점. 없으면 null — 조건에 맞지 않는 점을 대신 내놓지 않는다.
+     * (c) 기준 지점이 스냅된 꼭짓점(baseNodeId)과 같은 연결 컴포넌트여야 한다 — 걸어서 갈 수 없는 점은 내놓지 않는다.
      */
-    private RefugePoint findRefugeNear(double lat, double lng) {
+    private RefugePoint findRefugeNear(double lat, double lng, long baseNodeId) {
         String sql = """
-                WITH p AS (
+                WITH cc AS (
+                    SELECT node, component
+                    FROM pgr_connectedComponents('SELECT gid AS id, source, target, cost, reverse_cost FROM ways')
+                ),
+                reachable AS (
+                    SELECT node FROM cc
+                    WHERE component = (SELECT component FROM cc WHERE node = :baseNode)
+                ),
+                p AS (
                     SELECT ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography AS geog
                 ),
                 base AS (
@@ -212,6 +222,7 @@ public class RouteService {
                 FROM ways_vertices_pgr v, p, base
                 WHERE ST_DWithin(v.the_geom::geography, p.geog, :searchRadius)
                   AND v.elevation_m >= base.elevation_m + :minRise
+                  AND v.id IN (SELECT node FROM reachable)
                   AND NOT EXISTS (
                       SELECT 1 FROM flood_trace f WHERE ST_Intersects(f.geom, v.the_geom)
                   )
@@ -224,7 +235,8 @@ public class RouteService {
                 .addValue("lng", lng)
                 .addValue("baseRadius", REFUGE_BASE_RADIUS_M)
                 .addValue("searchRadius", REFUGE_SEARCH_RADIUS_M)
-                .addValue("minRise", REFUGE_MIN_RISE_M);
+                .addValue("minRise", REFUGE_MIN_RISE_M)
+                .addValue("baseNode", baseNodeId);
 
         List<RefugePoint> refuges = jdbcTemplate.query(sql, params, (ResultSet rs, int rowNum) -> new RefugePoint(
                 rs.getDouble("lat"),
