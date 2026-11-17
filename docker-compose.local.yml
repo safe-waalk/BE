@@ -1,0 +1,18 @@
+# 로컬 개발용 DB (PostGIS + pgRouting). Supabase 없이 기후 경로 기능을 돌리기 위한 것.
+#   docker compose -f docker-compose.local.yml up -d
+#   ./gradlew bootRun --args='--spring.profiles.active=local'
+services:
+  db:
+    image: pgrouting/pgrouting:17-3.5-3.8
+    platform: linux/amd64
+    environment:
+      POSTGRES_DB: safewalk
+      POSTGRES_USER: safewalk
+      POSTGRES_PASSWORD: safewalk
+    ports:
+      - "5433:5432"
+    volumes:
+      - safewalk-local-db:/var/lib/postgresql/data
+
+volumes:
+  safewalk-local-db:

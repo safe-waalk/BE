@@ -1,0 +1,7 @@
+# Orca가 새 작업 트리를 만든 직후 실행한다.
+# gitignore 대상(.env, osm-data)은 작업 트리에 없으므로 원본 체크아웃에서 가져온다.
+scripts:
+  setup: |
+    [ -f "$ORCA_ROOT_PATH/.env" ] && cp "$ORCA_ROOT_PATH/.env" .env
+    [ -d "$ORCA_ROOT_PATH/osm-data" ] && ln -sfn "$ORCA_ROOT_PATH/osm-data" osm-data
+    true
